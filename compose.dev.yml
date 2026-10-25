@@ -1,0 +1,28 @@
+# Local development. Builds from this checkout, uses a tiny model so a
+# transcription finishes in seconds, and bind-mounts the code so an edit needs
+# only a restart, not a rebuild.
+#
+#   make docker-dev
+services:
+  transcribe:
+    build: .
+    image: transcribe:dev
+    container_name: transcribe-dev
+    init: true
+    stop_grace_period: 10s
+    ports:
+      - "${TRANSCRIBE_PORT:-8011}:8011"
+    volumes:
+      - ./app.py:/app/app.py:ro
+      - ./templates:/app/templates:ro
+      - devdata:/data
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-tiny}
+      WHISPER_COMPUTE: int8
+      WHISPER_LANGUAGE: auto
+      WHISPER_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      PORT: "8011"
+
+volumes:
+  devdata:

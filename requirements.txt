@@ -1,0 +1,6 @@
+flask==3.0.3
+faster-whisper==1.1.0
+# Not imported by app.py, but faster-whisper 1.1.0 imports it in utils.py and
+# does not declare it in its own metadata. Removing it breaks startup with
+# ModuleNotFoundError: No module named 'requests'.
+requests

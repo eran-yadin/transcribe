@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.devdata
+__pycache__
+*.pyc
+tests
+testdata
+compose*.yml
+Makefile
+README.md
+CHANGELOG.md

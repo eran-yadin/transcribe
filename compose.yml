@@ -1,0 +1,33 @@
+# Standalone install. Nothing in this file depends on the homelab catalog.
+#
+#   docker compose up -d
+#   xdg-open http://localhost:8011
+#
+# The volume is named `data`, which compose prefixes with the project name. Run
+# from a directory called `transcribe` and it resolves to `transcribe_data` --
+# the same volume the homelab catalog entry uses, so the two are interchangeable.
+services:
+  transcribe:
+    image: ghcr.io/eran-yadin/transcribe:${TRANSCRIBE_VERSION:-v0.1.0}
+    container_name: transcribe
+    restart: unless-stopped
+    # tini as PID 1. Belt and braces: app.py installs its own SIGTERM handler,
+    # but without one of the two a stop is a 10-second wait then SIGKILL (137).
+    init: true
+    stop_grace_period: 30s
+    ports:
+      - "${TRANSCRIBE_PORT:-8011}:8011"
+    volumes:
+      - data:/data
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-ivrit-ai/whisper-large-v3-turbo-ct2}
+      WHISPER_COMPUTE: ${WHISPER_COMPUTE:-int8}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-auto}
+      WHISPER_BEAM: ${WHISPER_BEAM:-5}
+      WHISPER_THREADS: ${WHISPER_THREADS:-3}
+      OMP_NUM_THREADS: ${WHISPER_THREADS:-3}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
+      PORT: "8011"
+
+volumes:
+  data:

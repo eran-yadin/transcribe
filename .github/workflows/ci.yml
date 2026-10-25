@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"   # same as the image's base
+
+      - name: Byte-compile
+        run: python -m py_compile app.py
+
+      - name: Shell syntax
+        run: bash -n tests/smoke.sh
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Smoke test
+        run: make smoke
+        env:
+          PY: python
+          DATA_DIR: .devdata
+          WHISPER_MODEL: tiny
+          WHISPER_COMPUTE: int8
+          WHISPER_THREADS: "2"
+          OMP_NUM_THREADS: "2"
+          PORT: "8011"
+
+      - name: Build the image
+        run: docker build -t transcribe:ci .

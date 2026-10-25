@@ -1,0 +1,6 @@
+.venv/
+.devdata/
+__pycache__/
+*.pyc
+# local fixtures: real audio, never committed
+testdata/
