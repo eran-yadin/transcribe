@@ -45,7 +45,7 @@ All via environment variables; defaults suit a small CPU-only box.
 | Endpoint | Returns |
 |---|---|
 | `GET /api/status` | `{"queue": n, "items": {id: {status, language, duration}}}` |
-| `GET /api/transcript/<id>` | text, language, duration, status |
+| `GET /api/transcript/<id>` | `id`, `name`, `status`, `language`, `duration`, `transcript` |
 | `GET /audio/<id>` | the original audio file |
 
 ## Development
