@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Transcribe{% endblock %}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Complete light palette on bare :root; the two blocks below redefine only
+     the tokens, so an explicit choice wins over the OS in both directions. */
+  :root {
+    --bg:#ebe4da; --surface:#f6f2ec; --surface-2:#e2d9cc;
+    --ink:#241c16; --ink-soft:#4c3f35; --muted:#7a6a5c;
+    --line:#d6cabb; --line-soft:#e0d6c8;
+    --accent:#8c5a33; --ok:#4f6b47; --wait:#96702c; --bad:#9c3b2e;
+    --shadow:0 1px 2px rgba(36,28,22,.07);
+    --grad:
+      radial-gradient(1100px 620px at 18% -12%, #fdfaf4 0%, rgba(253,250,244,0) 62%),
+      radial-gradient(900px 520px at 92% 8%, #f0e3d2 0%, rgba(240,227,210,0) 58%),
+      linear-gradient(168deg, #f0e9df 0%, #e8e0d3 52%, #e0d5c4 100%);
+    --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans:'Assistant', 'Heebo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#15110e; --surface:#1e1813; --surface-2:#2a2219;
+      --ink:#ece3d8; --ink-soft:#cfc2b4; --muted:#9b8878;
+      --line:#30261e; --line-soft:#271f19;
+      --accent:#c98b55; --ok:#8aa87e; --wait:#d2a64f; --bad:#d9705e;
+      --shadow:0 1px 2px rgba(0,0,0,.35);
+      --grad:
+        radial-gradient(1100px 620px at 18% -12%, #2a2017 0%, rgba(42,32,23,0) 62%),
+        radial-gradient(900px 520px at 92% 8%, #221a19 0%, rgba(34,26,25,0) 58%),
+        linear-gradient(168deg, #17120f 0%, #131010 52%, #0e0b09 100%);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#15110e; --surface:#1e1813; --surface-2:#2a2219;
+    --ink:#ece3d8; --ink-soft:#cfc2b4; --muted:#9b8878;
+    --line:#30261e; --line-soft:#271f19;
+    --accent:#c98b55; --ok:#8aa87e; --wait:#d2a64f; --bad:#d9705e;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+    --grad:
+      radial-gradient(1100px 620px at 18% -12%, #2a2017 0%, rgba(42,32,23,0) 62%),
+      radial-gradient(900px 520px at 92% 8%, #221a19 0%, rgba(34,26,25,0) 58%),
+      linear-gradient(168deg, #17120f 0%, #131010 52%, #0e0b09 100%);
+  }
+
+  *{box-sizing:border-box}
+  html{height:100%}
+  /* One fixed, composited layer. Painting the gradient on body with
+     background-attachment:fixed costs a repaint per scroll frame on several
+     mobile browsers, and the phone is the upload path. */
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--grad)}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:14px;line-height:1.5;font-weight:300;-webkit-font-smoothing:antialiased;
+    padding-bottom:calc(54px + env(safe-area-inset-bottom, 0px));
+  }
+  img{max-width:100%}
+  [hidden]{display:none!important}
+  a{color:var(--accent)}
+  .wrap{max-width:980px;margin:0 auto;padding-inline:16px}
+
+  .top{
+    position:sticky;top:env(safe-area-inset-top, 0px);z-index:20;
+    background:color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .top-row{display:flex;align-items:center;gap:12px;padding-block:10px}
+  .brand{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:0;white-space:nowrap;
+         text-decoration:none;color:var(--ink)}
+  .brand span{color:var(--accent)}
+  .spacer{flex:1 1 auto}
+  .queue{font-family:var(--mono);font-size:11px;color:var(--muted);
+         display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--wait);
+         animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion: reduce){.pulse{animation:none}}
+
+  .ghost{appearance:none;background:none;border:1px solid var(--line);color:var(--ink-soft);
+         font-family:var(--sans);font-size:12px;font-weight:400;padding:4px 9px;
+         border-radius:5px;cursor:pointer;line-height:1.4;text-decoration:none;
+         display:inline-block}
+  .ghost:hover{border-color:var(--accent);color:var(--accent)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:10px}
+  .search{flex:1 1 220px;min-width:0;display:flex;align-items:center;gap:8px;
+          background:color-mix(in srgb, var(--surface) 62%, transparent);
+          border:1px solid var(--line);border-radius:6px;padding:0 10px;height:34px}
+  .search:focus-within{border-color:var(--accent)}
+  .search svg{flex:none;color:var(--muted)}
+  .search input{flex:1 1 auto;min-width:0;border:0;background:none;outline:none;
+                font-family:var(--sans);font-size:13.5px;font-weight:300;color:var(--ink)}
+  .search input::placeholder{color:var(--muted)}
+  .hint{font-family:var(--mono);font-size:10px;color:var(--muted);
+        border-left:1px solid var(--line);padding-left:8px;white-space:nowrap}
+  select.filter{appearance:none;height:34px;padding:0 26px 0 10px;border-radius:6px;
+    border:1px solid var(--line);color:var(--ink-soft);
+    background-color:color-mix(in srgb, var(--surface) 62%, transparent);
+    font-family:var(--sans);font-size:12.5px;font-weight:400;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+                     linear-gradient(135deg,currentColor 50%,transparent 50%);
+    background-position:calc(100% - 14px) 15px, calc(100% - 9px) 15px;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  select.filter:hover{border-color:var(--accent)}
+
+  .settings{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom, 0px);box-shadow:var(--shadow)}
+  .s-bar{display:flex;align-items:center;gap:10px;height:44px;background:none;border:0;
+    width:100%;cursor:pointer;font-family:var(--sans);color:var(--ink-soft);
+    font-size:12.5px;padding-inline:16px;max-width:980px;margin:0 auto}
+  .s-bar .chev{transition:transform .15s ease;color:var(--muted)}
+  .settings.open .s-bar .chev{transform:rotate(180deg)}
+  @media (prefers-reduced-motion: reduce){.s-bar .chev{transition:none}}
+  .s-body{display:none;border-top:1px solid var(--line-soft)}
+  .settings.open .s-body{display:block}
+  .s-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+          gap:1px 20px;padding-block:14px}
+  .s-item{display:flex;flex-direction:column;gap:2px;padding-block:7px}
+  .s-item label{font-size:10.5px;font-weight:600;letter-spacing:.07em;
+                text-transform:uppercase;color:var(--muted)}
+  .s-item .val{font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+  .s-item code{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .s-note{font-size:12px;color:var(--muted);border-top:1px solid var(--line-soft);
+          padding-block:10px 14px;max-width:62ch}
+  @media (max-width:560px){.hint{display:none}}
+  {% block style %}{% endblock %}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <a class="brand" href="/">Transcribe<span>.</span></a>
+      <div class="spacer"></div>
+      {% if active %}
+        <div class="queue" id="queue"><span class="pulse"></span>{{ active }} in progress</div>
+      {% else %}
+        <div class="queue" id="queue">idle</div>
+      {% endif %}
+      <button class="ghost" id="theme" type="button" aria-label="Switch theme">Dark</button>
+    </div>
+
+    <form class="controls" action="/search" method="get">
+      <div class="search">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <input id="q" name="q" type="search" dir="auto" value="{{ q or '' }}"
+               placeholder="Search every transcript…">
+        <span class="hint">stems match best — פגיש</span>
+      </div>
+      {% block filters %}{% endblock %}
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="settings" id="settings">
+  <button class="s-bar" type="button" id="s-toggle" aria-expanded="false" aria-controls="s-body">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2"></path>
+    </svg>
+    <span>Settings</span>
+    <span class="spacer"></span>
+    <span class="queue" style="font-size:10.5px">{{ cfg.compute }} · {{ cfg.threads }} threads</span>
+    <svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg>
+  </button>
+
+  <div class="s-body" id="s-body">
+    <div class="wrap">
+      <div class="s-grid">
+        <div class="s-item"><label>Model</label><span class="val">{{ cfg.model }}</span><code>WHISPER_MODEL</code></div>
+        <div class="s-item"><label>Precision</label><span class="val">{{ cfg.compute }}</span><code>WHISPER_COMPUTE</code></div>
+        <div class="s-item"><label>Language</label><span class="val">{{ 'Auto-detect' if cfg.language == 'auto' else cfg.language }}</span><code>WHISPER_LANGUAGE</code></div>
+        <div class="s-item"><label>CPU threads</label><span class="val">{{ cfg.threads }}</span><code>WHISPER_THREADS</code></div>
+        <div class="s-item"><label>Beam size</label><span class="val">{{ cfg.beam }}</span><code>WHISPER_BEAM</code></div>
+        <div class="s-item"><label>Upload limit</label><span class="val">{{ cfg.max_mb }} MB</span><code>MAX_UPLOAD_MB</code></div>
+      </div>
+      <p class="s-note">
+        Read from the environment, so these mirror <code>compose.yml</code> — change them there and
+        restart. One job runs at a time so transcription never takes the whole box; big batches are
+        an overnight job.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var root = document.documentElement, tbtn = document.getElementById('theme');
+  function isDark(){
+    var t = root.getAttribute('data-theme');
+    return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function paintTheme(){ tbtn.textContent = isDark() ? 'Light' : 'Dark'; }
+  tbtn.addEventListener('click', function(){
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('transcribe-theme', next); } catch (e) {}
+    paintTheme();
+  });
+  try {
+    var saved = localStorage.getItem('transcribe-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  paintTheme();
+
+  var s = document.getElementById('settings'), sb = document.getElementById('s-toggle');
+  sb.addEventListener('click', function(){
+    var open = s.classList.toggle('open');
+    sb.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  // Poll only while something is actually working, and stop once it is not.
+  // An always-on timer is the kind of idle cost this box cannot spare.
+  window.TRANSCRIBE_ACTIVE = {{ active|int }};
+  {% block script %}{% endblock %}
+</script>
+</body>
+</html>

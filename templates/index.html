@@ -1,154 +1,175 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Transcribe</title>
-<style>
-  :root{
-    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
-    --text:#e6e8ec; --muted:#8b93a1; --accent:#4f9cf9; --ok:#3fb950;
-    --warn:#d29922; --err:#f85149;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;
-       background:var(--bg);color:var(--text)}
-  a{color:var(--accent);text-decoration:none}
-  .wrap{max-width:900px;margin:0 auto;padding:24px 18px}
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-         flex-wrap:wrap;margin-bottom:20px}
-  h1{font-size:22px;margin:0}
-  .model{font-size:12px;color:var(--muted)}
-  .panel{background:var(--panel);border:1px solid var(--border);
-         border-radius:10px;padding:18px;margin-bottom:18px}
-  .drop{border:1.5px dashed var(--border);border-radius:10px;padding:26px;
-        text-align:center;cursor:pointer;transition:.15s;background:var(--panel2)}
-  .drop.hot{border-color:var(--accent);background:#1a2230}
+{% extends "_layout.html" %}
+
+{% block style %}
+  .drop{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;
+    margin-block:12px;border:1px dashed var(--line);border-radius:7px;
+    background:color-mix(in srgb, var(--surface) 55%, transparent);color:var(--muted);
+    font-size:13px;cursor:pointer;text-align:center;padding:10px 14px}
+  .drop:hover,.drop.over{border-color:var(--accent);color:var(--accent)}
   .drop input{display:none}
-  .btn{background:var(--accent);color:#06101f;border:0;border-radius:8px;
-       padding:9px 16px;font-weight:600;cursor:pointer;font-size:14px}
-  .btn:disabled{opacity:.5;cursor:default}
-  form.search{display:flex;gap:8px;margin-bottom:18px}
-  form.search input{flex:1;background:var(--panel2);border:1px solid var(--border);
-       color:var(--text);border-radius:8px;padding:9px 12px;font-size:14px}
-  table{width:100%;border-collapse:collapse}
-  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);
-        font-size:14px;vertical-align:middle}
-  th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;
-     letter-spacing:.04em}
-  td.name{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;
-        font-weight:600}
-  .s-pending{background:#2a2f3a;color:var(--muted)}
-  .s-processing{background:#3a2f12;color:var(--warn)}
-  .s-done{background:#10261a;color:var(--ok)}
-  .s-error{background:#2d1416;color:var(--err)}
-  .lang{font-size:12px;color:var(--muted);text-transform:uppercase}
-  .empty{color:var(--muted);text-align:center;padding:30px}
-  .qbar{font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px}
-  .spin{display:inline-block;width:9px;height:9px;border:2px solid var(--warn);
-        border-top-color:transparent;border-radius:50%;animation:sp .8s linear infinite;
-        margin-right:5px;vertical-align:-1px}
-  @keyframes sp{to{transform:rotate(360deg)}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <h1>🎙 Transcribe</h1>
-    <span class="model">{{ model }}</span>
-  </header>
+  .drop b{font-weight:600;color:var(--ink-soft)}
+  .drop:hover b,.drop.over b{color:var(--accent)}
 
-  <div class="panel">
-    <form id="up" action="/upload" method="post" enctype="multipart/form-data">
-      <label class="drop" id="drop">
-        <input type="file" name="audio" id="file" accept="audio/*" multiple>
-        <div id="droptext">Drop audio here or click to choose &nbsp;·&nbsp;
-          mp3, m4a, wav, ogg, opus, flac</div>
-      </label>
-      <div style="margin-top:12px;text-align:right">
-        <button class="btn" id="go" type="submit" disabled>Upload &amp; transcribe</button>
-      </div>
-    </form>
+  .list-head{display:flex;align-items:baseline;gap:10px;padding-bottom:6px;
+    border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted)}
+  .count{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+
+  .row{display:grid;gap:2px 12px;align-items:baseline;grid-template-columns:10px 1fr auto;
+    padding-block:11px;border-bottom:1px solid var(--line-soft);text-decoration:none;
+    color:inherit}
+  .row:hover{background:color-mix(in srgb, var(--surface) 70%, transparent)}
+  .dot{width:7px;height:7px;border-radius:50%;margin-top:7px;background:var(--muted)}
+  .dot.done{background:var(--ok)}
+  .dot.processing,.dot.pending{background:var(--wait)}
+  .dot.error{background:var(--bad)}
+  .name{font-size:14px;font-weight:400;color:var(--ink);overflow-wrap:anywhere}
+  .meta{grid-column:3;grid-row:1;display:flex;align-items:baseline;gap:10px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lang{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+  .state{grid-column:2 / -1;font-size:12.5px;color:var(--muted)}
+  .state.error{color:var(--bad);overflow-wrap:anywhere}
+  .empty{color:var(--muted);font-size:13px;padding-block:28px;text-align:center}
+  @media (max-width:560px){
+    .row{grid-template-columns:10px 1fr}
+    .meta{grid-column:2;grid-row:2}
+    .state{grid-column:2}
+  }
+{% endblock %}
+
+{% block filters %}
+  <select class="filter" id="f-status" aria-label="Status">
+    <option value="">Any status</option>
+    <option value="done">Done</option>
+    <option value="processing">In progress</option>
+    <option value="pending">Queued</option>
+    <option value="error">Failed</option>
+  </select>
+  <select class="filter" id="f-lang" aria-label="Language">
+    <option value="">All languages</option>
+    {% for l in rows|map(attribute='language')|reject('none')|unique|sort %}
+      <option value="{{ l }}">{{ l|upper }}</option>
+    {% endfor %}
+  </select>
+  <select class="filter" id="f-sort" aria-label="Sort">
+    <option value="new">Newest first</option>
+    <option value="old">Oldest first</option>
+    <option value="long">Longest</option>
+  </select>
+{% endblock %}
+
+{% block content %}
+  <label class="drop" id="drop">
+    <input id="file" type="file" name="audio" multiple accept="audio/*">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" aria-hidden="true">
+      <path d="M12 16V4m0 0L7 9m5-5 5 5"></path>
+      <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"></path>
+    </svg>
+    <span><b>Add recordings</b> — or drop them here. They queue, one at a time.</span>
+  </label>
+  <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data" hidden></form>
+
+  <div class="list-head">
+    <span class="eyebrow">Recordings</span>
+    <span class="count" id="count">{{ rows|length }}</span>
   </div>
 
-  <form class="search" action="/search" method="get">
-    <input type="text" name="q" placeholder="Search all transcripts…">
-    <button class="btn" type="submit">Search</button>
-  </form>
+  {% if rows %}
+    {% for r in rows %}
+      <a class="row" href="{% if r.status == 'done' %}/transcript/{{ r.id }}{% else %}#{% endif %}"
+         data-status="{{ r.status }}" data-lang="{{ r.language or '' }}"
+         data-dur="{{ r.duration or 0 }}" data-created="{{ r.created_at }}" data-id="{{ r.id }}">
+        <span class="dot {{ r.status }}"></span>
+        <span class="name" dir="auto">{{ r.original_name }}</span>
+        <span class="meta">
+          <span class="lang">{{ r.language or '—' }}</span>
+          {%- if r.duration %}{{ '%d:%02d'|format((r.duration//60)|int, (r.duration%60)|int) }}{% else %}—{% endif %}
+          · {{ r.created_at[:10] }}
+        </span>
+        {% if r.status == 'processing' %}
+          <span class="state">Transcribing…</span>
+        {% elif r.status == 'pending' %}
+          <span class="state">Queued</span>
+        {% elif r.status == 'error' %}
+          <span class="state error">Failed — open the recording for the reason</span>
+        {% endif %}
+      </a>
+    {% endfor %}
+    <div class="empty" id="no-match" hidden>Nothing matches those filters.</div>
+  {% else %}
+    <div class="empty">No recordings yet. Add one above.</div>
+  {% endif %}
+{% endblock %}
 
-  <div class="panel">
-    <div class="qbar" id="qbar"></div>
-    {% if rows %}
-    <table>
-      <thead><tr><th>Recording</th><th>Status</th><th>Lang</th><th>Length</th><th>Added</th></tr></thead>
-      <tbody>
-      {% for r in rows %}
-        <tr data-id="{{ r.id }}">
-          <td class="name">
-            {% if r.status == 'done' %}<a href="/transcript/{{ r.id }}">{{ r.original_name }}</a>
-            {% else %}{{ r.original_name }}{% endif %}
-          </td>
-          <td class="status"><span class="pill s-{{ r.status }}">{{ r.status }}</span></td>
-          <td class="lang">{{ r.language or '—' }}</td>
-          <td class="dur">{% if r.duration %}{{ '%d:%02d'|format((r.duration//60)|int, (r.duration%60)|int) }}{% else %}—{% endif %}</td>
-          <td style="color:var(--muted);font-size:12px">{{ r.created_at.replace('T',' ') }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="empty">No recordings yet. Upload an MP3 to get started.</div>
-    {% endif %}
-  </div>
-</div>
+{% block script %}
+  // Submitting straight from the file input, so picking files is one gesture on
+  // a phone instead of pick-then-press.
+  var fileInput = document.getElementById('file');
+  var form = document.getElementById('upload-form');
+  var drop = document.getElementById('drop');
 
-<script>
-const drop = document.getElementById('drop');
-const file = document.getElementById('file');
-const go   = document.getElementById('go');
-const dtxt = document.getElementById('droptext');
+  function send(files) {
+    if (!files || !files.length) return;
+    var fd = new FormData();
+    for (var i = 0; i < files.length; i++) fd.append('audio', files[i]);
+    drop.classList.add('over');
+    fetch('/upload', { method: 'POST', body: fd, redirect: 'follow' })
+      .then(function () { location.reload(); })
+      .catch(function () { form.submit(); });
+  }
+  fileInput.addEventListener('change', function () { send(fileInput.files); });
+  ['dragenter', 'dragover'].forEach(function (e) {
+    drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (e) {
+    drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (ev) { send(ev.dataTransfer && ev.dataTransfer.files); });
 
-file.addEventListener('change', () => {
-  go.disabled = file.files.length === 0;
-  dtxt.textContent = file.files.length
-    ? [...file.files].map(f => f.name).join(', ')
-    : 'Drop audio here or click to choose';
-});
-['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => {
-  ev.preventDefault(); drop.classList.add('hot');
-}));
-['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {
-  ev.preventDefault(); drop.classList.remove('hot');
-}));
-drop.addEventListener('drop', ev => {
-  file.files = ev.dataTransfer.files;
-  file.dispatchEvent(new Event('change'));
-});
-document.getElementById('up').addEventListener('submit', () => {
-  go.disabled = true; go.textContent = 'Uploading…';
-});
+  // Filtering and sorting happen here because the page already holds every row;
+  // asking the server to re-render for a dropdown would be the slower option.
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.row'));
+  var fs = document.getElementById('f-status'), fl = document.getElementById('f-lang'),
+      fo = document.getElementById('f-sort'), count = document.getElementById('count'),
+      noMatch = document.getElementById('no-match');
 
-// Live status poll while anything is pending/processing.
-function pill(s){return '<span class="pill s-'+s+'">'+
-  (s==='processing'?'<span class=spin></span>':'')+s+'</span>';}
-async function poll(){
-  try{
-    const d = await (await fetch('/api/status')).json();
-    let busy = d.queue > 0;
-    document.querySelectorAll('tr[data-id]').forEach(tr => {
-      const it = d.items[tr.dataset.id]; if(!it) return;
-      if(it.status==='pending'||it.status==='processing') busy = true;
-      tr.querySelector('.status').innerHTML = pill(it.status);
-      tr.querySelector('.lang').textContent = (it.language||'—').toUpperCase();
-      if(it.status==='done' && !tr.querySelector('.name a')){ location.reload(); }
+  function apply() {
+    var shown = 0;
+    rows.forEach(function (r) {
+      var ok = (!fs.value || r.dataset.status === fs.value) &&
+               (!fl.value || r.dataset.lang === fl.value);
+      r.hidden = !ok;
+      if (ok) shown++;
     });
-    document.getElementById('qbar').textContent =
-      d.queue > 0 ? (d.queue + ' in queue') : '';
-    if(busy) setTimeout(poll, 3000);
-  }catch(e){ setTimeout(poll, 6000); }
-}
-poll();
-</script>
-</body>
-</html>
+    count.textContent = shown === rows.length ? rows.length : shown + ' of ' + rows.length;
+    if (noMatch) noMatch.hidden = shown !== 0 || rows.length === 0;
+
+    var parent = rows.length ? rows[0].parentNode : null;
+    if (!parent) return;
+    var sorted = rows.slice().sort(function (a, b) {
+      if (fo.value === 'long') return (+b.dataset.dur) - (+a.dataset.dur);
+      var cmp = a.dataset.created < b.dataset.created ? -1 : 1;
+      return fo.value === 'old' ? cmp : -cmp;
+    });
+    sorted.forEach(function (r) { parent.insertBefore(r, noMatch); });
+  }
+  [fs, fl, fo].forEach(function (el) { el.addEventListener('change', apply); });
+
+  // Only poll while the server says something is working, and stop as soon as
+  // it is not. An always-on timer is idle cost this box cannot spare.
+  if (window.TRANSCRIBE_ACTIVE > 0) {
+    var seen = {};
+    rows.forEach(function (r) { seen[r.dataset.id] = r.dataset.status; });
+    var tick = setInterval(function () {
+      fetch('/api/status').then(function (r) { return r.json(); }).then(function (d) {
+        var items = d.items || {}, changed = Object.keys(items).length !== rows.length;
+        for (var id in items) { if (seen[id] !== items[id].status) changed = true; }
+        if (changed) { clearInterval(tick); location.reload(); }
+      }).catch(function () {});
+    }, 5000);
+  }
+{% endblock %}

@@ -2,6 +2,51 @@
 
 Staying on `0.x` until the project's sprints are done.
 
+## v0.3.0 — 2026-10-25
+
+New interface, approved from a preview before any template was touched. Coffee
+palette in both light and dark, hairline rows instead of cards, search and
+filters on top, settings pinned at the bottom.
+
+### Added
+- A shared `_layout.html`, so the chrome lives in one place instead of being
+  pasted into three pages.
+- Theme toggle, remembered per browser. The palette is defined as tokens on
+  bare `:root`, redefined under `prefers-color-scheme: dark` guarded against an
+  explicit light choice, and again under `[data-theme="dark"]`, so an explicit
+  choice wins over the OS in both directions.
+- Hebrew is handled rather than hoped for: every filename, segment and excerpt
+  carries `dir="auto"`, so Hebrew lays out RTL while an English filename in the
+  same list stays LTR.
+- Filters (status, language, sort) run in the page. It already holds every row,
+  so a round-trip to re-render for a dropdown would be the slower option.
+- Segment highlighting follows the audio, and clicking a timestamp seeks.
+  `timeupdate` fires several times a second, so it walks from the last known
+  index instead of rescanning every segment.
+- Upload posts straight from the file input, so adding a recording on a phone
+  is one gesture rather than pick-then-press. Drag and drop still works.
+- Search results show an excerpt, and the no-match page explains the stem rule
+  (`פגיש` finds `פגישה` and `פגישת`; `פגישה` finds neither).
+
+### Changed
+- Pages poll `/api/status` **only while something is pending or transcribing**,
+  and stop as soon as it is not. An always-on timer is idle cost a 2-core box
+  should not pay.
+- The gradient is painted on one fixed, composited layer rather than on `body`
+  with `background-attachment: fixed`, which costs a repaint per scroll frame on
+  several mobile browsers.
+
+### Known issues
+- Search snippets are still not highlighted. `snippet()` returns NULL because
+  `search` is a contentless fts5 table with no text to build from; the result
+  list falls back to a leading excerpt. The real fix is an external-content
+  table, which would also make recordings deletable — see below.
+- **A recording cannot be deleted through the app**: no route, no button. And
+  the contentless fts5 table refuses `DELETE` outright
+  (`cannot DELETE from contentless fts5 table`), so removing one by hand needs
+  the fts5 `'delete'` command with the original column values handed back. The
+  same `content=''` decision causes both this and the blank snippets.
+
 ## v0.2.0 — 2026-10-25
 
 Marks sprint 2 complete: the app is standalone, and the standalone install is

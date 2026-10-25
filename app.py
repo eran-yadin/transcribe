@@ -212,6 +212,32 @@ class Worker(threading.Thread):
 
 
 # ----------------------------------------------------------------------------
+# Template context
+# ----------------------------------------------------------------------------
+@app.context_processor
+def shell_context():
+    """What the shared layout needs on every page: the settings strip and
+    whether anything is working, which is what decides if the page polls."""
+    try:
+        active = db().execute(
+            "SELECT COUNT(*) AS c FROM recordings WHERE status IN ('pending','processing')"
+        ).fetchone()["c"]
+    except sqlite3.Error:
+        active = 0
+    return {
+        "active": active,
+        "cfg": {
+            "model": WHISPER_MODEL,
+            "compute": WHISPER_COMPUTE,
+            "language": WHISPER_LANGUAGE,
+            "threads": WHISPER_THREADS,
+            "beam": WHISPER_BEAM,
+            "max_mb": MAX_MB,
+        },
+    }
+
+
+# ----------------------------------------------------------------------------
 # Routes
 # ----------------------------------------------------------------------------
 @app.route("/")
@@ -269,8 +295,14 @@ def search():
         # FTS5 MATCH; wrap the term so partial words still hit.
         try:
             rows = db().execute(
+                # snippet() comes back NULL here: `search` is a contentless
+                # fts5 table, so it stores no text to build a snippet from. Until
+                # that becomes an external-content table, `head` gives the result
+                # list something to show. substr keeps this from loading whole
+                # transcripts just to display 240 characters.
                 """SELECT r.id, r.original_name, r.created_at,
-                          snippet(search, 0, '[', ']', ' … ', 12) AS snip
+                          snippet(search, 0, '[', ']', ' … ', 12) AS snip,
+                          substr(r.transcript, 1, 240) AS head
                      FROM search s JOIN recordings r ON r.id = s.rowid
                     WHERE search MATCH ?
                     ORDER BY rank""",
