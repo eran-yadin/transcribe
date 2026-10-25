@@ -24,6 +24,11 @@ target machine and tagged `:latest`.
   `utils.py` without declaring it, so dropping it breaks startup.)
 
 ### Known issues
+- The v0.1.0 release also published a `latest` tag, which this project does not
+  want: `docker/metadata-action`'s default flavor adds one on any semver push.
+  Suppressed with `flavor: latest=false` from the next release on. The existing
+  `latest` will stay pinned to v0.1.0 and go stale; deleting it needs a token
+  with `write:packages`.
 - Search finds recordings but every snippet is blank: the FTS5 table is
   contentless (`content=''`), so `snippet()` has no text to build from and
   returns NULL. The fix is an external-content table
