@@ -7,8 +7,8 @@
 # The docker path mirrors what actually ships, and needs your user in the docker
 # group (`sudo usermod -aG docker $$USER`, then log out and back in).
 
-PY      := .venv/bin/python
-DATA    := .devdata
+PY      ?= .venv/bin/python
+DATA    ?= .devdata
 MODEL   ?= tiny
 PORT    ?= 8011
 THREADS ?= 2
@@ -31,12 +31,12 @@ venv: ## Create .venv and install dependencies (python 3.11 via mise)
 	$(PY) -m pip install -r requirements.txt
 
 dev: ## Run the app locally on $(PORT) with the tiny model
-	@test -x $(PY) || { echo "no venv yet — run 'make venv'"; exit 1; }
+	@command -v $(PY) >/dev/null 2>&1 || { echo "no python at $(PY) — run 'make venv'"; exit 1; }
 	@mkdir -p $(DATA)
 	$(DEV_ENV) $(PY) app.py
 
 smoke: ## End-to-end test: start, upload a generated clip, assert it transcribes
-	@test -x $(PY) || { echo "no venv yet — run 'make venv'"; exit 1; }
+	@command -v $(PY) >/dev/null 2>&1 || { echo "no python at $(PY) — run 'make venv'"; exit 1; }
 	$(DEV_ENV) PY=$(PY) tests/smoke.sh
 
 lint: ## Byte-compile the app and sanity-check the templates

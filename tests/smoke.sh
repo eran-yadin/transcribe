@@ -22,7 +22,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "  ok — $*"; }
 
 command -v curl >/dev/null || fail "curl not found"
-[ -x "$PY" ] || fail "no venv at $PY — run 'make venv'"
+command -v "$PY" >/dev/null || fail "no python at $PY — run 'make venv'"
 
 mkdir -p "$DATA_DIR"
 echo "starting app on :$PORT (data in $DATA_DIR)"
