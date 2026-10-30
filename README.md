@@ -38,7 +38,7 @@ All via environment variables; defaults suit a small CPU-only box.
 | `WHISPER_BEAM` | `5` | lower is faster, slightly less accurate |
 | `MAX_UPLOAD_MB` | `300` | upload size cap |
 | `DATA_DIR` | `/data` | uploads, transcripts, SQLite db |
-| `MODEL_DIR` | `$DATA_DIR/models` | the model cache. Point it at its own volume: it is ~3 GB of re-downloadable files, and a backup of `DATA_DIR` should not have to carry them |
+| `MODEL_DIR` | `$DATA_DIR/models` | the model cache. Point it at its own volume: it is ~1.5 GB of re-downloadable files, and a backup of `DATA_DIR` should not have to carry them |
 | `PORT` | `8011` | |
 
 ## API

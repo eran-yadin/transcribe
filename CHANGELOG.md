@@ -31,9 +31,11 @@ Staying on `0.x` until the project's sprints are done.
   minutes spent downloading a 1.6 GB model, so `processing` alone could not tell
   working from downloading. The UI now says which, and says "first run, ~1.6 GB"
   when the cache is empty.
-- **`MODEL_DIR`**, so the model cache can live on its own volume. It is ~3.2 GB
-  of re-downloadable files against ~35 MB of real data, and a pre-update backup
-  archives a whole volume — 99% cache. Defaults to `$DATA_DIR/models`, so an
+- **`MODEL_DIR`**, so the model cache can live on its own volume. Measured with
+  `du`, it is ~1.5 GB of re-downloadable files against ~35 MB of real data, and
+  a pre-update backup archives a whole volume — ~98% cache. (An earlier figure
+  of 3.2 GB here was wrong: summing file sizes over a walk double-counts
+  HuggingFace's symlinks from `snapshots/` into `blobs/`.) Defaults to `$DATA_DIR/models`, so an
   existing install is unaffected. `HF_HOME` is derived from it rather than set in
   the Dockerfile, so there is one knob instead of two that can disagree.
 - **`brief*` and `embedding*` columns**, unused for now. The brief ones are a

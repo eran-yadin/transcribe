@@ -33,7 +33,7 @@ TRANSCRIPT_DIR  = DATA_DIR / "transcripts"
 DB_PATH         = DATA_DIR / "transcribe.sqlite"
 
 # The model cache gets its own directory so it can get its own volume. It is
-# ~3.2 GB of re-downloadable files guarding ~35 MB of real data, and homelab's
+# ~1.5 GB of re-downloadable files guarding ~35 MB of real data, and homelab's
 # pre-update backup archives a whole volume -- so with the cache inside
 # DATA_DIR, every update spends minutes tarring 99% cache. A separate volume can
 # be declared `bulk_volumes` and skipped.
