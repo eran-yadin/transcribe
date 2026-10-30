@@ -26,6 +26,8 @@
   .err{border:1px solid var(--bad);border-radius:6px;padding:12px;margin-top:14px;
     color:var(--bad);font-size:13px;overflow-wrap:anywhere}
   .waiting{color:var(--muted);font-size:13px;padding-block:20px}
+  .ghost.danger{color:var(--bad);border-color:color-mix(in srgb, var(--bad) 40%, var(--line))}
+  .ghost.danger:hover{border-color:var(--bad);background:color-mix(in srgb, var(--bad) 8%, transparent)}
   @media (max-width:560px){
     .t-title{font-size:17px}
     .seg{grid-template-columns:48px 1fr;gap:10px}
@@ -49,7 +51,9 @@
     <div class="err"><b>Transcription failed.</b><br>{{ row.error }}</div>
   {% elif row.status != 'done' %}
     <p class="waiting">
-      {% if row.status == 'processing' %}Transcribing now{% else %}Queued{% endif %} —
+      {% if row.status == 'processing' %}
+        {% if phase == 'loading-model' %}Loading the speech model{% if not model_cached %} — first run, ~1.6 GB{% endif %}{% else %}Transcribing now{% endif %}
+      {% else %}Queued{% endif %} —
       this page refreshes itself while it works.
     </p>
   {% else %}
@@ -60,6 +64,10 @@
       <button class="ghost" type="button" id="toggle">Plain view</button>
       <a class="ghost" href="/api/transcript/{{ row.id }}">JSON</a>
       <a class="ghost" href="/audio/{{ row.id }}">Audio</a>
+      <form method="post" action="/delete/{{ row.id }}" style="display:inline"
+            onsubmit="return confirm('Delete this recording, its audio and its transcript? This cannot be undone.')">
+        <button class="ghost danger" type="submit">Delete</button>
+      </form>
     </div>
 
     <div id="segments">

@@ -91,7 +91,11 @@
           · {{ r.created_at[:10] }}
         </span>
         {% if r.status == 'processing' %}
-          <span class="state">Transcribing…</span>
+          {% if phase == 'loading-model' %}
+            <span class="state">Loading the speech model{% if not model_cached %} — first run, ~1.6 GB{% endif %}…</span>
+          {% else %}
+            <span class="state">Transcribing…</span>
+          {% endif %}
         {% elif r.status == 'pending' %}
           <span class="state">Queued</span>
         {% elif r.status == 'error' %}

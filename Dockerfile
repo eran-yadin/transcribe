@@ -6,10 +6,10 @@ LABEL org.opencontainers.image.title="Transcribe" \
       org.opencontainers.image.source="https://github.com/eran-yadin/transcribe" \
       org.opencontainers.image.licenses="MIT"
 
-# HF_HOME points into the data volume so the ~1.6GB model is downloaded once and
-# survives an image update.
-ENV PYTHONUNBUFFERED=1 \
-    HF_HOME=/data/models
+# HF_HOME is deliberately NOT set here. app.py derives it from MODEL_DIR, so
+# there is one knob instead of two that can silently disagree about where a
+# 3 GB cache lives.
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 

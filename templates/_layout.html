@@ -140,7 +140,7 @@
       <a class="brand" href="/">Transcribe<span>.</span></a>
       <div class="spacer"></div>
       {% if active %}
-        <div class="queue" id="queue"><span class="pulse"></span>{{ active }} in progress</div>
+        <div class="queue" id="queue"><span class="pulse"></span>{% if phase == 'loading-model' %}loading model{% else %}{{ active }} in progress{% endif %}</div>
       {% else %}
         <div class="queue" id="queue">idle</div>
       {% endif %}

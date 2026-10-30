@@ -2,6 +2,47 @@
 
 Staying on `0.x` until the project's sprints are done.
 
+## v0.4.0 — 2026-10-30
+
+### Fixed
+- **Search snippets were always blank, and a recording could not be deleted at
+  all.** One cause: `search` was a contentless FTS5 table, so `snippet()` had no
+  text to build from and returned NULL, and `DELETE` failed outright with
+  *cannot DELETE from contentless fts5 table*. It is now external-content
+  (`content='recordings', content_rowid='id'`) kept in step by triggers, so the
+  app no longer maintains the index by hand and cannot let it drift. Existing
+  databases migrate themselves on start, once, and rebuild from the rows.
+- **A new `POST /delete/<id>`** removes the row, its index entry, its audio and
+  its JSON — with a 409 while that recording is being transcribed, and a
+  confirm-guarded button on the transcript page.
+- **Every `app.logger.info` call was being discarded.** Flask's logger sits at
+  WARNING outside debug, so "Loading model", "Job N done" and the shutdown line
+  had never once appeared, despite the docs claiming you would see them. The
+  root logger stays at WARNING, because raising it globally also turns on
+  huggingface_hub's per-request HTTP logging and buries the lines worth reading.
+- **`tests/smoke.sh` could pass against a process it did not start.** It waited
+  for `/api/status` without checking the port was free first, so when the
+  homelab test VM (which forwards host :8011 into itself) was up, the whole
+  suite silently validated the VM's copy and still reported success.
+
+### Added
+- **`phase` in `/api/status`** — `idle` / `loading-model` / `transcribing`. A row
+  reads `processing` for the entire first job after a restart, including the
+  minutes spent downloading a 1.6 GB model, so `processing` alone could not tell
+  working from downloading. The UI now says which, and says "first run, ~1.6 GB"
+  when the cache is empty.
+- **`MODEL_DIR`**, so the model cache can live on its own volume. It is ~3.2 GB
+  of re-downloadable files against ~35 MB of real data, and a pre-update backup
+  archives a whole volume — 99% cache. Defaults to `$DATA_DIR/models`, so an
+  existing install is unaffected. `HF_HOME` is derived from it rather than set in
+  the Dockerfile, so there is one knob instead of two that can disagree.
+- **`brief*` and `embedding*` columns**, unused for now. The brief ones are a
+  denormalised copy for display only — a brief is owned by a separate service so
+  that apps we did not write can have them too. The embedding is this app's own,
+  for semantic search over its transcripts.
+- `tests/fts.sh` and `make test`, so the migration, `snippet()` and delete stay
+  guarded.
+
 ## v0.3.0 — 2026-10-25
 
 New interface, approved from a preview before any template was touched. Coffee

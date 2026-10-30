@@ -16,13 +16,16 @@ services:
       - ./app.py:/app/app.py:ro
       - ./templates:/app/templates:ro
       - devdata:/data
+      - devmodels:/models
     environment:
       WHISPER_MODEL: ${WHISPER_MODEL:-tiny}
       WHISPER_COMPUTE: int8
       WHISPER_LANGUAGE: auto
       WHISPER_THREADS: "2"
       OMP_NUM_THREADS: "2"
+      MODEL_DIR: /models
       PORT: "8011"
 
 volumes:
   devdata:
+  devmodels:

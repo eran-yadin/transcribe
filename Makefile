@@ -17,7 +17,7 @@ DEV_ENV := DATA_DIR=$(DATA) WHISPER_MODEL=$(MODEL) WHISPER_COMPUTE=int8 \
            WHISPER_THREADS=$(THREADS) OMP_NUM_THREADS=$(THREADS) PORT=$(PORT)
 
 .DEFAULT_GOAL := help
-.PHONY: help venv dev smoke lint clean docker-dev docker-down docker-logs
+.PHONY: help venv dev smoke fts test lint clean docker-dev docker-down docker-logs
 
 help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -38,6 +38,13 @@ dev: ## Run the app locally on $(PORT) with the tiny model
 smoke: ## End-to-end test: start, upload a generated clip, assert it transcribes
 	@command -v $(PY) >/dev/null 2>&1 || { echo "no python at $(PY) — run 'make venv'"; exit 1; }
 	$(DEV_ENV) PY=$(PY) tests/smoke.sh
+
+fts: ## Prove the search-index migration, snippet() and delete
+	@command -v $(PY) >/dev/null 2>&1 || { echo "no python at $(PY) — run 'make venv'"; exit 1; }
+	PY=$(PY) tests/fts.sh
+
+test: smoke fts ## Run every test
+	@echo "all tests passed"
 
 lint: ## Byte-compile the app and sanity-check the templates
 	$(PY) -m py_compile app.py

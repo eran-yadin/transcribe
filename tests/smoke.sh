@@ -25,13 +25,25 @@ command -v curl >/dev/null || fail "curl not found"
 command -v "$PY" >/dev/null || fail "no python at $PY — run 'make venv'"
 
 mkdir -p "$DATA_DIR"
+
+# Refuse to run if the port already answers. Without this the test waits for
+# /api/status, gets a reply from whatever owns the port, and passes every
+# assertion against a process it did not start. That is not hypothetical: the
+# homelab test VM forwards host :8011 into itself, so a booted VM silently
+# hijacked this whole suite and it still reported success.
+if curl -fsS --max-time 2 "$BASE/api/status" >/dev/null 2>&1; then
+    fail "something already answers on :$PORT (the test VM forwards it) -- stop it, or run with PORT=<other>"
+fi
+
 echo "starting app on :$PORT (data in $DATA_DIR)"
 "$PY" app.py >"$TMP/app.log" 2>&1 &
 APP_PID=$!
 
 for _ in $(seq 1 60); do
-    curl -fsS "$BASE/api/status" >/dev/null 2>&1 && break
+    # Liveness first: an app that died on startup should be reported as dead,
+    # not waited on as a slow starter.
     kill -0 "$APP_PID" 2>/dev/null || { cat "$TMP/app.log"; fail "app exited during startup"; }
+    curl -fsS "$BASE/api/status" >/dev/null 2>&1 && break
     sleep 1
 done
 curl -fsS "$BASE/api/status" >/dev/null || { cat "$TMP/app.log"; fail "app never answered /api/status"; }

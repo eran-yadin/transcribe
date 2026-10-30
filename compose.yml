@@ -19,6 +19,10 @@ services:
       - "${TRANSCRIBE_PORT:-8011}:8011"
     volumes:
       - data:/data
+      # The model cache lives on its own volume. It is ~3 GB of re-downloadable
+      # files; keeping it out of `data` means a backup archives the ~35 MB that
+      # actually matters, and the catalog can declare this one skippable.
+      - models:/models
     environment:
       WHISPER_MODEL: ${WHISPER_MODEL:-ivrit-ai/whisper-large-v3-turbo-ct2}
       WHISPER_COMPUTE: ${WHISPER_COMPUTE:-int8}
@@ -27,7 +31,9 @@ services:
       WHISPER_THREADS: ${WHISPER_THREADS:-3}
       OMP_NUM_THREADS: ${WHISPER_THREADS:-3}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
+      MODEL_DIR: /models
       PORT: "8011"
 
 volumes:
   data:
+  models:
